@@ -30,23 +30,9 @@
 
 ---
 
-## 📁 项目结构说明
+## 学习进度 Week01
 
-```bash
-.
-├── week01/
-│   ├── tensor_basics.md
-│   └── autograd_experiments.ipynb
-├── week02/
-│   └── training_loop_demo.py
-├── transformer/
-│   └── attention_from_scratch.py
-├── multimodal/
-│   └── clip_tutorial.md
-├── model-alignment/
-│   └── rl_prompt_alignment.md
-├── cuda/
-│   └── my_first_kernel.cu
-├── final_project/
-│   └── finetune_tinyllm_report.md
-└── README.md
+| 章节         | 状态 | 日期       |
+|--------------|------|------------|
+| 2.1 数据操作 | ✅   | 2025-05-22 |
+| 2.2 数据预处理 | ⏳   | Planned    |
