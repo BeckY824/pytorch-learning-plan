@@ -1,34 +1,43 @@
-# Week 01: PyTorch 入门 & 张量操作
+# Week 01: 动手学深度学习 - 张量与自动求导
 
 本周目标：
-- 安装并配置 PyTorch（CPU 版本）
-- 学习张量（Tensor）的基本操作
-- 理解 autograd 自动求导机制
-- 完成张量练习题与小项目
+- 理解 PyTorch 张量结构与基本操作
+- 掌握自动求导机制（autograd）
+- 理解计算图、反向传播原理
 
 ---
 
-## 📚 学习资料
+## ✅ 本周阅读章节
+- 第2章：预备知识（重点是2.1-2.3）
+- 第3章：自动求导
 
-- 官方教程：https://pytorch.org/tutorials/beginner/basics/intro.html
-- 推荐视频：
-  - [60分钟 PyTorch 入门](https://www.bilibili.com/video/BV1Q5411e7Ys)
-- 推荐 GitHub 教程：
-  - https://github.com/yunjey/pytorch-tutorial
+推荐在线阅读版本：https://zh.d2l.ai/chapter_preliminaries/ndarray.html
 
 ---
 
-## ✅ 本周内容结构
+## 🧪 实践内容
+- 用 PyTorch 实现：
+  - 张量创建、索引、切片、运算
+  - 自动求导与梯度追踪
+  - 练习题实现与理解
+
+---
+
+## 📁 文件说明
 
 | 文件 | 内容说明 |
 |------|-----------|
-| `tensor_basics.md` | 张量操作的基础笔记：创建、索引、维度、广播等 |
-| `autograd_demo.ipynb` | 自动求导演示，构建简单前馈网络 |
-| `mini_project_tensor.py` | 张量练习：矩阵乘法、归一化、激活函数等 |
+| `01_tensor_preliminaries.md` | 学习张量相关操作的笔记与例子 |
+| `02_autograd.md` | autograd 机制说明与实践笔记 |
+| `exercises_tensor.py` | 自编练习，如张量加权平均、简单线性函数求导等 |
 
 ---
 
-## 🔖 计划打卡建议
-
-- 每日记录学习时间 & 感受
-- 每项笔记完成后使用 Git 提交
+## 📌 每日建议任务
+| 星期 | 任务内容 |
+|------|----------|
+| 周一 | 阅读第2章 + 写 `01_tensor_preliminaries.md` |
+| 周二 | 跟读第3章 + autograd 概念整理 |
+| 周三 | 编写 tensor 操作代码练习 |
+| 周四 | 编写 autograd 案例练习 |
+| 周五 | 总结，推送至 GitHub，提交一次学习日志 |
