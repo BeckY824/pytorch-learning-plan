@@ -51,10 +51,14 @@
 	f.backward()
 	print(x.grad)
 	12.	编程题：用 torch.autograd.grad() 实现：
-给定函数 y = x^2 + 3x，计算在 x = 1.0 处的一阶导数和二阶导数。
-
+	给定函数 y = x^2 + 3x，计算在 x = 1.0 处的一阶导数和二阶导数。
+	不知道.
 ⸻
 
 🧠 五、思考题
 	13.	思考题：PyTorch 中为什么默认在反向传播后会释放计算图？你在什么情况下会选择保留图？
+	a.释放计算图会释放内存，减轻用户损耗。一般默认用户只进行一次自动求导。
+	b.对高阶求导时会保留图
 	14.	思考题：PyTorch 中 .backward() 与 torch.autograd.grad() 有什么区别？分别适用于哪些场景？
+	.backward()适用于低阶求导
+	.torch.autograd.grad()更方便与高阶求导
