@@ -1,6 +1,8 @@
-# 注意力(Attention)
+# Transformer架构
 
-## 神经网络
+## 注意力机制
+
+### 神经网络
 
 1. 基础的神经网络为MLP（多层感知机）
 
@@ -54,7 +56,7 @@
 
      引入激活函数后，神经网络可以学习出**弯曲、复杂的边界**。
 
-## 前馈神经网络
+### 前馈神经网络
 
 Feedforward Neural Network，FNN/FFN
 
@@ -74,13 +76,13 @@ MLP是前馈神经网络最典型、最基本的一种。
 
 
 
-## 注意力机制
+### 注意力机制
 
 即，我们往往无需看清楚全部内容，而仅将注意力集中在重点部分即可。
 
 具体而言，注意力机制的特点是通过计算 **Query**与**Key**的相关性为真值加权求和，从而拟合序列中每个词同其他词的相关关系。
 
-### 深入理解注意力机制
+#### 深入理解注意力机制
 
 三个核心变量 ：查询值 Query， 键值 Key 和 真值 Value。
 
@@ -137,7 +139,7 @@ $$
 >
 > 这个技巧类似于BatchNorm，LayerNorm的动机：控制数值分布，帮助训练稳定。
 
-### 自注意力
+#### 自注意力
 
 实际应用中，我们往往只需要计算Query和Key之间的注意力结果，很少存在额外的真值Value。在Transfomer的Decoder结构中，Q来自于Decoder的输入，K和V来自于Encoder的输出，从而拟合了编码信息与历史信息之间的关系。
 
@@ -150,7 +152,7 @@ $$
 attention(x, x, x)
 ```
 
-### 掩码自注意力
+#### 掩码自注意力
 
 Mask Self-Attention，使用注意力掩码的自注意力机制。作用是遮蔽一些特定位置的token，模型在学习的过程中，会忽略掉被遮蔽的token。
 
@@ -176,4 +178,237 @@ transformer：
 ```
 
 在每一行输入中，模型只看到前面的token，预测下一个token。上述过程不再是串行的过程，而是可以一起并行地输入到模型中。模型只需要每一个样本根据未被遮蔽的token来预测下一个token即可，从而实现了并行的语言模型。
+
+#### 多头注意力
+
+一次注意力计算只能拟合一种相关关系，单一的注意力机制很难全面拟合语句序列里的相关关系。因此Transformer使用了多头注意力机制，即同时对一个语料进行多次注意力计算，每次注意力计算都能拟合不同的关系，将最后的多次结果拼接起来作为最后的输出。
+
+将原始的输入序列进行多组的自注意力处理；然后再将每一组得到的自注意力结果拼接起来，再通过一个线形层进行处理，得到最终的输出：
+$$
+MultiHead(Q,K,V)=Concat(head_1,head_2,...,head_h)W^O   
+\newline
+where\ head_i=Attention(QW_i^Q,KW_i^K,VW_i^V)
+$$
+
+```python
+import torch
+# 模拟两个注意力头的输出，每个头形状为 (1, 3, 4)
+head1 = torch.tensor([[[1, 2, 3, 4],
+                       [5, 6, 7, 8],
+                       [9, 10, 11, 12]]], dtype=torch.float32)
+
+head2 = torch.tensor([[[10, 20, 30, 40],
+                       [50, 60, 70, 80],
+                       [90, 100, 110, 120]]], dtype=torch.float32)
+                       
+# dim=-1 表示沿着最后一个维度拼接（即 feature 维度）
+output = torch.cat([head1, head2], dim=-1)
+
+print(output.shape)  # (1, 3, 8)
+print(output)
+
+tensor([[[  1.,   2.,   3.,   4.,  10.,  20.,  30.,  40.],
+         [  5.,   6.,   7.,   8.,  50.,  60.,  70.,  80.],
+         [  9.,  10.,  11.,  12.,  90., 100., 110., 120.]]])
+```
+
+```python
+import torch.nn as nn
+import torch
+
+"""多头注意力计算模块"""
+class MultiHeadAttention(nn.Module):
+  
+  def __init__(self, args: ModelArgs, is_causal=False):
+    # 构造函数
+    # args：配置对象
+    super().__init__()
+    # 隐藏层维度必须是头数的整数倍，因为后面我们将会输入拆成头数个矩阵
+    assert args.n_embd % args.n_heads == 0
+    # 模型并行处理大小，默认为1。
+    model_parallel_size = 1
+    # 本地计算头数，等于总头数除以模型并行处理大小。
+    self.n_local_heads = args.n_heads // model_parallel_size
+    # 每个头的维度，等于模型维度除以头的总数
+    self.head_dim = args.dim // args.n_heads
+    
+    # Wq, Wk, Wv 参数矩阵，每个参数矩阵为 n_embd x n_embd
+    # 这里通过三个组合矩阵来代替了n个参数矩阵的组合，其逻辑在于矩阵内积再拼接其实等同于拼接矩阵再内积，
+    # 不理解的读者可以自行模拟一下，每一个线性层其实相当于n个参数矩阵的拼接
+     self.wq = nn.Linear(args.dim, args.n_heads * self.head_dim, bias=False)
+     self.wk = nn.Linear(args.dim, args.n_heads * self.head_dim, bias=False)
+     self.wv = nn.Linear(args.dim, args.n_heads * self.head_dim, bias=False)
+     # 输出权重矩阵，维度为 n_embd x n_embd（head_dim = n_embeds / n_heads）
+     self.wo = nn.Linear(args.n_heads * self.head_dim, args.dim, bias=False)
+     # 注意力的 dropout
+     self.attn_dropout = nn.Dropout(args.dropout)
+     # 残差连接的 dropout
+     self.resid_dropout = nn.Dropout(args.dropout)
+     
+  def forward(self, q:torch.Tensor, k:torch.Tensor, v:torch.Tensor):
+    
+    # 获取批次大小和序列长度，[batch_size, seq_len, dim]
+    bsz, seqlen, _ = q.shape
+    
+    # 计算查询 Q,K,V
+		xq, xk, xv = self.wq(q), self.wk(k), self.wv(v)
+    
+    # 将 Q,K,V 拆分成多头
+    xq = xq.view(bsz, seqlen, self.n_local_heads, self.head_dim)
+    xk = xk.view(bsz, seqlen, self.n_local_heads, self.head_dim)
+    xv = xv.view(bsz, seqlen, self.n_local_heads, self.head_dim)
+    xq = xq.transpose(1, 2)
+    xk = xk.transpose(1, 2)
+    xv = xv.transpose(1, 2) 
+    
+    # 注意力计算
+    scores = torch.matmul(xq, xk.transpose(2,3)) / math.sqrt(self.head_dim)
+    # 计算softmax
+    scores = F.softmax(scores.float(), dim=-1).type_as(xq)
+    # 做dropout
+    scores = self.attn_dropout(scores)
+    # ✖️v
+    output = torch.matmul(scores, xv)
+    
+    # 拼接
+   	output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
+
+    # 最终投影回残差流。
+    output = self.wo(output)
+    output = self.resid_dropout(output)
+    return output
+    
+```
+
+
+
+## Encoder-Decoder
+
+### Seq2Seq模型
+
+模型输入是一个自然语言序列，输出是一个可能不等长的自然语言序列。
+
+### 实现前馈神经网络
+
+```python
+class MLP(nn.Module):
+  
+  def __init__(self, dim:int, hidden_dim:int, dropout:float):
+    super().__init__()
+    # 定义第一层线性变换，从输入维度到隐藏维度
+    self.w1 = nn.Linear(dim, hidden_dim, bias=False)
+    # 定义第二层线性变换，从隐藏维度到输入维度
+    self.w2 = nn.Linear(hidden_dim, dim, bias=False)
+    # 定义dropout层，用于防止过拟合
+    self.dropout = nn.Dropout(dropout)
+    
+  def forward(self, x):
+    # 前向传播函数
+    # 首先，输入x通过第一层线性变换和RELU激活函数
+    # 然后，结果乘以输入x通过第三层线性变换的结果
+    # 最后，通过第二层线性变换和dropout层
+    return self.dropout(self.w2(F.relu(self.w1(x))))
+```
+
+Transformer的前馈神经网络是由两个线形层中间加一个 RELU 激活函数组成，以及前馈神经网络还加入了一个 Dropout 层来防止过拟合。
+
+### 层归一化
+
+Layer Norm
+
+归一化的核心是为了让不同层输入的取值范围或者分布能够比较一致。
+
+由于深度神经网络中每一层的输入都是上一次的输出，多层传递，之前所有的神经层的参数变化会导致其输入的分布发生较大的改变。
+
+在深度神经网络中，需要归一化操作，将每一层的输入都归一化成标准正态分布。
+
+归一化存在缺陷：
+
+- 当显存有限，mini-batch 较小时，Batch Norm 取的样本的均值和方差不能反映全局的统计分布信息，从而导致效果变差；
+- 对于在时间维度展开的 RNN，不同句子的同一分布大概率不同，所以 Batch Norm 的归一化会失去意义；
+- 在训练时，Batch Norm 需要保存每个 step 的统计信息（均值和方差）。在测试时，由于变长句子的特性，测试集可能出现比训练集更长的句子，所以对于后面位置的 step，是没有训练的统计量使用的；
+- 应用 Batch Norm，每个 step 都需要去保存和计算 batch 统计量，耗时又耗力
+
+因此使用效果更好的层归一化。Layer Norm 在每个样本上计算其所有层的均值和方差，从而使每个样本的分布达到稳定。
+
+简单实现一个 Layer Norm：
+
+```python
+class LayerNorm(nn.Module):
+  def __init__(self, features, eps=1e-6):
+    super(LayerNorm, self).__init__()
+    # 线性矩阵做映射
+    self.a_2 = nn.Parameter(torch.ones(features))
+    self.b_2 = nn.Parameter(torch.zeros(features))
+    self.eps = eps
+    
+  def forward(self, x):
+    # 在统计每个样本所有维度的值，求均值和方差
+    mean = x.mean(-1, keepdim=True)
+    std = x.std(-1, keepdim=True)
+    
+    # 注意这里也在最后一个维度发生了广播
+    return self.a_2 * (x - mean) / (std + self.eps) + self.b_2
+```
+
+### 残差连接
+
+Transformer模型结构复杂，层数深，为了避免模型退化，采用了残差连接的思想。
+
+### Encoder
+
+实现单个Encoder Layer：
+
+```python
+class EncoderLayer(nn.Module):
+  def __init__(self, args):
+    super().__init__()
+    # 一个 Layer 有两个 LayerNorm，分别在 Attention 之前和 MLP 之前
+    self.attention_norm = LayerNorm(args.n_embd)
+    # Encoder不需要掩码
+    self.attention = MultiHeadAttention(args, is_causal=False)
+    self.fnn_norm = LayerNorm(args.n_embd)
+    self.feed_forward = MLP(args)
+    
+  def forward(self, x):
+    # Layer Norm
+    norm_x = self.attention_norm(x)
+    # 自注意力
+    h = x + self.attention.forward(norm_x,norm_x,norm_x)
+    # 通过前馈神经网络
+    out = h + self.feed_forward.forward(self.fnn_norm(h))
+    return out
+```
+
+### Decoder
+
+实现单个Decoder Layer：
+
+```python
+class DecoderLayer(nn.Module):
+  def __init__(self,args):
+    super().__init__()
+    # 一个 Layer 中有三个 LayerNorm， 分别在 Mask Attention之前，Self-Attention 之前和 MLP 之前
+    self.attention_norm_1 = LayerNorm(args.n_embd)
+    # Decoder 的第一个部分是 Mask attention
+    self.mask_attention = MultiHeadAttention(args, is_causal=True)
+    self.attention_norm_2 = LayerNorm(args.n_embd)
+    # Decoder 的第二个部分 类似于 Encoder 的 Attention
+    self.attention = MultiHeadAttention(args, is_causal=False)
+    self.ffn_norm = LayerNorm(args.n_embd)
+    # 第三个部分是 MLP
+    self.feed_forward = MLP(args)
+    
+  def forward(self, x , enc_out):
+    # Layer Norm
+    norm_x = self.attention_norm_1(x)
+    # 掩码自注意力
+    x = x + self.mask_attention.forward(norm_x,norm_x,norm_x)
+    # 多头注意力
+    norm_x = self.attention_norm_2(x)
+    h = x + self.attention.forward(norm_x, enc_out, enc_out)
+    # 经过前馈神经网络
+    out = h + self.feed_forward.forward(self.fnn_norm(h))
+		return out
+```
 
