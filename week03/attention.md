@@ -412,3 +412,148 @@ class DecoderLayer(nn.Module):
 		return out
 ```
 
+## 搭建一个Transformer
+
+### Embedding层
+
+自然语言转换为机器可以处理的向量。
+
+分词器把自然语言切分成token并转换成一个固定的index。
+
+Embedding层的输入往往是一个形状为 (batch_size, seq_len, 1) 的矩阵。
+
+- 第一个维度是一次批处理的数量
+
+- 第二个维度是自然语言序列的长度
+
+- 第三个维度是token经过tokenizer转换成的index的值
+
+- i.e : "我喜欢你" -> [[0,1,2]]，其 batch_size为1，seq_len为3，转换的index如下
+
+  ```
+  input: 我
+  output: 0
+  
+  input: 喜欢
+  output: 1
+  
+  input：你
+  output: 2
+  ```
+
+Embedding内部是一个可训练的（vocab_size, embedding_dim)的权重矩阵，词表里的每一个值，都对应一行维度为 embedding_dim 的向量。对于输入的值，会对应到这个词向量，然后拼接成 **(batch_size, seq_len, embedding_dim)** 的矩阵输出。
+
+可以直接使用 torch 中的 Embedding 层：
+
+```python
+self.tok_embeddings = nn.Embedding(args.vocab_size, args.dim)
+```
+
+### 位置编码
+
+注意力机制中序列的每一个 token，对其来说都是平等的，即”我喜欢你“ 和 ”你喜欢我“ 在注意力机制看来是完全相同的。因此使用了位置编码。
+
+Transfomer使用了正余弦函数来进行位置编码（绝对位置编码Sinusoidal），其编码方式为：
+$$
+PE(pos,2i) = sin(pos/10000^{2i/d_{model}})
+\newline
+PE(pos,2i+1) = cos(pos/10000^{2i/d_{model}})
+$$
+举例，输入为长度为4的句子“I like to code”，我们可以得到下面的词向量矩阵 x，其中每一行代表的就是一个词向量，x~0~ = [0.1, 0.2, 0.3, 0.4] 对应的就是 “I” 的词向量，他的 pos 就是0，以此类推。
+
+![截屏2025-06-17 13.43.06](/Users/edward_beck8n24/Desktop/截屏2025-06-17 13.43.06.png)
+
+位置编码的好处：
+
+1. 使 PE 能够适应比训练集里面所有句子更长的句子，假设训练集里面最长的句子是有20个单词，突然来了一个长度为21的句子，使用公式，可以计算出第21位的 Embedding。
+2. 可以让模型容易地计算出相对位置，对于固定长度的间距 k，PE(pos+k)，可以用 PE(pos) 计算得到。
+
+```python
+def PositionalEncoding(nn.Module):
+  """位置编码模块"""
+  
+  def __init__(self, args):
+    super(PositionalEncoding, self).__init__()
+    # dropout 层
+    self.dropout = nn.Dropout(p=args.dropout)
+    
+    # block size 是序列的最大长度
+    pe = torch.zeros(args.block_size, args.n_embd)
+    position = torch.arange(0, args.block_size).unsqueeze(1)
+    
+    # 计算theta
+    div_term = torch.exp(
+      torch.arange(0, args.n_embd, 2) * (math.log(10000) / args.n_embd)
+    )
+    
+    # 分别计算 sin、cos的结果
+    pe[:,0::2] = torch.sin(position * div_term)
+    pe[:,1::2] = torch.cos(position * div_term)
+    pe = pe.unsqueeze(0)
+    self.register_buffer("pe", pe)
+    
+  def forward(self, x):
+    # 将位置编码加到 Embedding 结果上
+    x = x + self.pe[:, :x.size(1)].requires_grad_(False)
+    return self.dropout(x)
+  
+```
+
+### 一个完整的Transformer
+
+```python
+class Transformer(nn.Module):
+  """整体模型"""
+  def __init__(self,args):
+    super().__init()
+    # 必须输入词表大小和 block size
+    assert args.vocab_size is not None
+    assert args.block_size is not None
+    self.args = args
+    self.transformer = nn.ModuleDict(dict(
+    	wte = nn.Embedding(args.vocab_size, args.n_embd),
+      wpe = PositionalEncoding(args),
+      drop = nn.Dropout(args.dropout),
+      encoder = Encoder(args)
+      decoder = Decoder(args)
+    ))
+    
+    # 最后的线形层， 输入时 n_embd，输出时词表大小
+    self.lm_head = nn.Linear(args.n_embd, args.vocab_size, bias=False)
+    
+    # 初始化所有的权重
+    self.apply(self._init_weights)
+    
+    # 查看所有的参数的数量
+    print("number of parameters: %.2fM" % (self.get_num_params()/1e6,))
+   
+  """前向计算函数"""
+	def forward(self, idx, targets=None):
+    # 输入为 idx， 维度为（batch size, sequence length), targets计算loss
+    device = idx.device
+    b, t = idx.size()
+    assert t <= self.args.block_size f"不能计算该序列，该序列长度为 {t}, 最大序列长度只有 {self.args.block_size}"
+    
+    # 首先通过 self.transformer
+    # 首先将输入 idx 通过 Embedding层，得到维度为 （batch size, sequence length, n_embd)
+    # 通过Embedding层
+    tok_emb = self.transformer.wte(idx)
+    # 通过位置编码
+    pos_emb = self.transformer.wpe(tok_emb)
+    # 再进行 Dropout
+    x = self.transformer.drop(pos_emb)
+    # 然后通过 Encoder
+    enc_out = self.transformer.encoder(x)
+    # 再通过 Decoder
+    x = self.transformer.decoder(x,enc_out)
+    
+    if targets is not None:
+      logits = self.lm_head(x)
+      loss = F.cross_entropy(logits.view(-1,logits.size(-1), targets.view(-1), ignore_index=-1))
+    else:
+      logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
+     	loss = None
+
+    return logits, loss
+```
+
