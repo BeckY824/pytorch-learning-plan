@@ -57,6 +57,7 @@
 |   -   |  ✅  |  2025-06-16 |    多头注意力 & Encoder，Decoder实现    |
 |  | ✅ | 2025-06-17 | 手搓一个Transformer基础版 |
 | 自测Transformer | ✅ | 2025-06-18 | 完成Transformer自测，结果一般，需加强。<br />**总体建议**：<br />-对attention原理有直接理解（缩放，softmax）<br />-能识别基本的结构<br />**需加强部分**：<br />-编码结构顺序&推理过程<br />-多头注意力拼接机制<br />-动手实现能力<br />-位置编码的数学表达于意义理解 |
+| 注意力机制回顾 | ✅ | 2025-06-19 | 2 hours回顾，内容包括：<br />点积；简易attention实现；mask-self-attention；multi-head-attention实现与原理（利用矩阵的操作实现并行，先大后拆） |
 
  
 
