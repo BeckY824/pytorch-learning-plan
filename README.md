@@ -60,4 +60,5 @@
 | 注意力机制回顾 | ✅ | 2025-06-19 | 2 hours回顾，内容包括：<br />点积；简易attention实现；mask-self-attention；multi-head-attention实现与原理（利用矩阵的操作实现并行，先合后拆） |
 | - | ✅ | 2025-06-20 | 回顾Encoder部分：FNN，LayerNorm，以及一个Encoder Layer组成 <br />对于多头部分的数学计算以及代码实现明天进行复习还有点部分没理解；<br />阅读了3.1部分的Encoder-only PLM |
 |  | ✅ | 2025-06-21 | 回顾Decoder部分：Mask-attention，MultiHeadAttention，以及一个Decoder Layer组成 <br />阅读了3.2部分的Encoder-Decoder PLM以及3.3部分Decoder-only PLM |
+| | ✅ | 2025-06-22 | 完成了一个完整的Transformer的源码手写，加深印象; <br />阅读4.1部分的什么是LLM |
 
