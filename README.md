@@ -62,3 +62,10 @@
 |  | ✅ | 2025-06-21 | 回顾Decoder部分：Mask-attention，MultiHeadAttention，以及一个Decoder Layer组成 <br />阅读了3.2部分的Encoder-Decoder PLM以及3.3部分Decoder-only PLM |
 | | ✅ | 2025-06-22 | 完成了一个完整的Transformer的源码手写，加深印象; <br />阅读4.1部分的什么是LLM |
 
+## 学习进度 Week04
+
+| 章节         | 状态 | 日期       | 内容                             |
+| ------------ | ---- | ---------- | -------------------------------- |
+| 自注意力机制 | ✅    | 2025-06-23 | 自注意力机制 & Transformer的自测 |
+|              |      |            |                                  |
+|              |      |            |                                  |
