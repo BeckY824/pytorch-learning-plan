@@ -14,7 +14,7 @@ class ModelConfig(PretrainedConfig):
             norm_eps: float = 1e-5, # 归一化层的eps
             max_seq_len: int = 512, # 最大序列长度
             dropout: float = 0.0, # dropout概率
-            flash_attn: bool = True, # 是否使用 Flash Attention
+            flash_attn: bool = True, # 是否使用 Flash_Attention
             **kwargs,
     ):
         self.dim = dim
