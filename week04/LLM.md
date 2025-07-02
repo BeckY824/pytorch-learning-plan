@@ -93,26 +93,6 @@ PPO，Proximal Policy Optimization，近端策略优化算法。
 
 <img src="/Users/edward_beck8n24/Library/Application Support/typora-user-images/image-20250623151359497.png" alt="image-20250623151359497" style="zoom:50%;" />
 
-# 大模型训练流程实践
-
-## 模型预训练
-
-手写实现的LLM训练存在以下问题：
-
-- 手写实现LLM结构工作量大，难以实时跟进最新模型的结构创新
-- 从零实现的LLM训练无法较好地实现多卡分布式训练，训练效率较低
-- 和现有预训练LLM不兼容，无法使用预训练好的模型参数
-
-### 框架介绍
-
-Transformers通过模块化设计实现了对 BERT、GPT上百种主流模型架构的统一支持。
-
-框架内置的 Trainer 类封装了分布式训练的核心逻辑，支持 PyTorch 原生 DDP、DeepSpeed 等多种分布式训练策略。
-
-### 初始化LLM
-
-我们可以使用 Transformers 的 AutoModel 类来直接初始化已经实现好的模型。对于任意预训练模型，其参数中都包含有模型的配置信息。
-
 
 
 
