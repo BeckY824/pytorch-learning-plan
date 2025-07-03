@@ -70,6 +70,128 @@ $$
 
 <img src="/Users/edward_beck8n24/Library/Application Support/typora-user-images/image-20250702153114688.png" alt="image-20250702153114688" style="zoom:50%;" />
 
+### 代码实现：线性层的 LoRA
+
+```python
+import torch
+import torch.nn as nn
+
+class LoRALinear(nn.Module):
+  def __init__(self, in_features, out_features, r):
+    super(LoRALinear,self).__init__()
+    self.in_features = in_features # 对应 d
+    self.out_features = out_features # 对应 k
+    self.r = r # 低秩值
+    
+    # 原始权重矩阵，冻结
+    self.weight = nn.Parameter(torch.randn(out_features, in_features))
+    self.weight.requires_grad = False # 冻结
+    
+    # LoRA 部分的参数，初始化 A 从均值为 0 的正态分布中采样，B 为全零
+    self.A = nn.Parameter(torch.empty(r, in_features)) # 形状为 (r,d)
+    self.B = nn.Parameter(torch.zeros.(out_features, r)) # 形状为 (k,r)
+    nn.init.normal_(self.A, mean=0.0, std=0.02) # 初始化 A
+    
+    # 偏执项，可选
+    self.bias = nn.Parameter(torch.zeros(out_features))
+    
+  def forward(self, x):
+    # 原始部分
+    original_output = torch.nn.functional.linear(x, self.weight, self.bias)
+    # LoRA 增量部分
+    delta_W = torch.matmul(self.B, self.A) # 形状为 (k,d)
+    lora_output = torch.nn.functional.linear(x, delta_W)
+    # 总输出
+    return original_output + lora_output
+    
+```
+
+## LoRA 在注意力机制中的应用
+
+Transformer 模型的核心机制是注意力机制，其中涉及到 Query，Key，Value的计算。这些都是线性变换。
+
+###  代码实现：带 LoRA 的注意力
+
+```python
+import torch
+import torch.nn as nn
+
+class LoRAAttention(nn.Module):
+  def __init__(self, embed_dim, r):
+    super(LoRAAttention, self).__init__()
+    self.embed_dim = embed_dim # 对应 d_model
+    self.r = r # 低秩值
+    
+    # 原始v的 QKV 权重，冻结
+    self.W_Q = nn.Linear(embed_dim, embed_dim)
+    self.W_K = nn.Linear(embed_dim, embed_dim)
+    self.W_V = nn.Linear(embed_dim, embed_dim)
+    self.W_O = nn.Linear(embed_dim, embed_dim)
+    
+    for paramedics in self.W_Q.parameters():
+      param.requires_grad = False
+    for param in self.W_K.parameters():
+      param.requires_grad = False
+    for param in self.W_V.parameters():
+      param.requires_grad = False
+		
+    # LoRA 的 Q 部分
+    self.A_Q = nn.Parameter(torch.empty(r, embed_dim))
+    self.B_Q = nn.Parameter(torch.zeros(embed_dim, r))
+    nn.init.normal_(self.A_Q, mean=0.0, std=0.02)
+    
+    # LoRA 的 K 部分
+    self.A_K = nn.Parameter(torch.empty(r, embed_dim))
+    self.B_K = nn.Parameter(torch.zeros(embed_dim, r))
+    nn.init.normal_(self.A_K, mean=0.0, std=0.02)
+
+    # LoRA 的 V 部分
+    self.A_V = nn.Parameter(torch.empty(r, embed_dim))
+    self.B_V = nn.Parameter(torch.zeros(embed_dim, r))
+    nn.init.normal_(self.A_V, mean=0.0, std=0.02)
+
+  def forward(self, query, key, value):
+    """
+    query, key, value 的形状为 (batch_size, seq_length, embed_dim)
+    """
+    # 计算原始的 Q，K，V
+    Q = self.W_Q(query)
+    K = self.W_K(key)
+    V = self.W_V(value)
+    
+    # 计算 LoRA 增量部分
+    delta_Q = torch.matmul(query, self.A_Q.t()) # (batch_size, seq_length,r)
+    delta_Q = torch.matmul(delta_Q, self.B_Q.t())  # (batch_size, seq_length, embed_dim)
+    delta_K = torch.matmul(key, self.A_K.t())
+    delta_K = torch.matmul(delta_K, self.B_K.t())
+    delta_V = torch.matmul(value, self.A_V.t())
+    delta_V = torch.matmul(delta_V, self.B_V.t())
+
+    # 更新之后的 Q, K, V
+    Q = Q + delta_Q
+    K = K + delta_K
+    V = V + delta_V
+    
+    # 计算注意力的分
+    scores = torch.matmul(Q, K.transpose(-2,-1)) / (self.embed_dim ** 0.5)
+    attn_weights = torch.nn.functional.softmax(scores, dim=-1)
+    context = torch.matmul(attn_weights, V)
+    
+    #输出层
+    output = self.W_O(context)
+    
+    return output
+```
+
+代码解释：
+
+- 原始权重：W_Q，W_K，W_V 被冻结，不参与训练
+- LoRA 参数：A_Q，B_Q，A_K，B_K，A_V，B_V 是可训练的低秩矩阵。
+- 前向传播：
+  - 首先计算原始的 Q，K，V
+  - 然后计算 LoRA 的增量部分，并添加到原始的 Q，K，V 上
+  - 接着按照注意力机制进行计算
+
 ## 为什么只导入 LoRA 模型不能生图
 
 LoRA 模型只是对原始模型的权重更新进行了低秩近似，存储了权重的增量部分 $\Delta W$, 而不是完整的模型权重 w。
