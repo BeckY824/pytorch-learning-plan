@@ -1,0 +1,8 @@
+#不上传模型和数据
+*.pth
+*.ckpt
+*.pt
+week06/cache/
+week06/exp1/
+week06/GenAI-Hw5/
+week06/output/
