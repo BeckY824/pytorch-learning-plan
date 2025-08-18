@@ -1,0 +1,73 @@
+{
+  "model_name": "Qwen2-1.5B-Instruct",
+  "model_path": "../week06/cache/Qwen2-1.5B-Instruct",
+  "timestamp": "20250807_134522",
+  "training_params": {
+    "num_epoch": 3,
+    "data_size": 50,
+    "support_ratio": 0.2
+  },
+  "device": "mps",
+  "comparisons": [
+    {
+      "id": 1,
+      "question": "真人化是否能改善日本漫畫的全球可及性？",
+      "original_response": "是的，真人化可以增加漫畫的視覺吸引力和可觀賞性。",
+      "trained_response": "是的，真人化可以增加漫畫的吸引力和接受度。"
+    },
+    {
+      "id": 2,
+      "question": "真人化如何影響年輕一代對日本漫畫的看法？",
+      "original_response": "真人化使漫畫更接近生活，吸引年輕觀眾。",
+      "trained_response": "真人化增加漫畫知名度，但可能淡化原作深度。"
+    },
+    {
+      "id": 3,
+      "question": "真人化是否能提升原作漫畫的文學價值？",
+      "original_response": "真人化可以增加觀眾的接觸度，但不一定提升原作的文學價值。",
+      "trained_response": "不一定，視情況而定。"
+    },
+    {
+      "id": 4,
+      "question": "真人化是否有助於保護和保存日本漫畫的傳統？",
+      "original_response": "是的，真人化有助於保持漫畫的傳統風格和故事性。",
+      "trained_response": "是的，真人化有助於保持原汁原味。"
+    },
+    {
+      "id": 5,
+      "question": "真人化是否有助於提升日本漫畫行業的經濟效益？",
+      "original_response": "是的，真人化可以增加觀眾吸引力和收視率。",
+      "trained_response": "是的，真人化可以增加收視率和票房收益。"
+    },
+    {
+      "id": 6,
+      "question": "真人化如何影響日本漫畫原作者的創作動力？",
+      "original_response": "真人化增加創作靈感，但可能影響創作風格。",
+      "trained_response": "真人化可能降低創作動力。"
+    },
+    {
+      "id": 7,
+      "question": "真人化是否對漫畫原作的忠實粉絲公平？",
+      "original_response": "真人化可能影響原作的深度和細節。",
+      "trained_response": "真人化可能削弱原作的深度和深度。"
+    },
+    {
+      "id": 8,
+      "question": "真人化是否能夠促進日本漫畫的創新和多樣性？",
+      "original_response": "是的，真人化有助於展現更多樣性。",
+      "trained_response": "是的，真人化有助於更多元化和創新。"
+    },
+    {
+      "id": 9,
+      "question": "真人化是否有助於擴大動漫文化的市場份額？",
+      "original_response": "是的，真人化可以增加動漫的吸引力和接受度。",
+      "trained_response": "是的，真人化可以增加觀眾吸引力。"
+    },
+    {
+      "id": 10,
+      "question": "真人化是否有助於提高日本漫畫在全球的競爭力？",
+      "original_response": "是的，真人化可以增加漫畫的吸引力和接受度。",
+      "trained_response": "是的，真人化可以增加觀眾的吸引力。"
+    }
+  ]
+}
